@@ -1,13 +1,5 @@
 # 更新记录
-
 # 项目功能
-* 请求openai增加代理（防墙）
-* AI性格设定
-* 兼容3.0和3.5API
-* 基本问答界面
-* 参数可配置
-* markdown语法
-* 提问上下文
 # 快速开始
 # 免责声明 Disclaimers
 The code is for demo and testing only. 代码仅用于演示和测试。
