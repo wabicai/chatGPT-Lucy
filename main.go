@@ -1,14 +1,14 @@
 package main
 
 import (
-	"github.com/alecthomas/kong"
-	"github.com/gin-gonic/gin"
-	"github.com/wabicai/chatgpt-lucy/config"
-	"github.com/wabicai/chatgpt-lucy/pkg/logger"
-	"github.com/wabicai/chatgpt-lucy/routes"
-	"net/http"
+	"chatgpt-lucy/config"
+	"chatgpt-lucy/pkg/logger"
+	"chatgpt-lucy/routes"
 	"strconv"
 	"sync"
+
+	"github.com/alecthomas/kong"
+	"github.com/gin-gonic/gin"
 )
 
 var router *gin.Engine

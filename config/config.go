@@ -1,14 +1,13 @@
 package config
 
 import (
+	"chatgpt-lucy/pkg/logger"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"sync"
-
-	"github.com/wabicai/chatgpt-lucy/pkg/logger"
 )
 
 // Configuration 项目配置

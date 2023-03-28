@@ -1,15 +1,15 @@
 package routes
 
 import (
+	"chatgpt-lucy/app/http/controllers"
+	"chatgpt-lucy/app/middlewares"
+	"chatgpt-lucy/config"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-	. "github.com/wabicai/chatgpt-lucy/app/http/controllers"
-	"github.com/wabicai/chatgpt-lucy/app/middlewares"
-	"github.com/wabicai/chatgpt-lucy/config"
 )
 
-var chatController = NewChatController()
+var chatController = controllers.NewChatController()
 
 // RegisterWebRoutes 注册路由
 func RegisterWebRoutes(router *gin.Engine) {
@@ -24,5 +24,8 @@ func RegisterWebRoutes(router *gin.Engine) {
 		}))
 	}
 	router.GET("/", chatController.Index)
-	// router.POST("/completion", chatController.Completion)
+	chatgpt := router.Group("chatgpt")
+	{
+		chatgpt.POST("/completions", chatController.Completions)
+	}
 }

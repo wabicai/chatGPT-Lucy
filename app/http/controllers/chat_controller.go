@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"chatgpt-lucy/config"
+	"chatgpt-lucy/pkg/logger"
 	"context"
 	"net"
 	"net/http"
@@ -10,8 +12,6 @@ import (
 
 	"golang.org/x/net/proxy"
 
-	"github.com/869413421/chatgpt-web/config"
-	"github.com/869413421/chatgpt-web/pkg/logger"
 	"github.com/gin-gonic/gin"
 	gogpt "github.com/sashabaranov/go-gpt3"
 )
@@ -34,7 +34,7 @@ func (c *ChatController) Index(ctx *gin.Context) {
 }
 
 // Completion 回复
-func (c *ChatController) Completion(ctx *gin.Context) {
+func (c *ChatController) Completions(ctx *gin.Context) {
 	var request gogpt.ChatCompletionRequest
 	err := ctx.BindJSON(&request)
 	if err != nil {
