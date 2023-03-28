@@ -3,7 +3,6 @@ package config
 import (
 	"chatgpt-lucy/pkg/logger"
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -42,6 +41,8 @@ var once sync.Once
 
 // LoadConfig 加载配置
 func LoadConfig() *Configuration {
+	var config *Configuration
+	var once sync.Once
 	once.Do(func() {
 		// 给配置赋默认值
 		config = &Configuration{
@@ -56,14 +57,9 @@ func LoadConfig() *Configuration {
 			PresencePenalty:  0.6,
 		}
 
-		// 判断配置文件是否存在，存在直接JSON读取
-		_, err := os.Stat(CLI.Config)
+		// 读取配置文件
+		f, err := os.Open(CLI.Config)
 		if err == nil {
-			f, err := os.Open(CLI.Config)
-			if err != nil {
-				log.Fatalf("open config err: %v", err)
-				return
-			}
 			defer f.Close()
 			encoder := json.NewDecoder(f)
 			err = encoder.Decode(config)
@@ -72,88 +68,170 @@ func LoadConfig() *Configuration {
 				return
 			}
 		}
-		// 有环境变量使用环境变量
-		ApiKey := os.Getenv("APIKEY")
-		ApiURL := os.Getenv("APIURL")
-		Model := os.Getenv("MODEL")
-		MaxTokens := os.Getenv("MAX_TOKENS")
-		Temperature := os.Getenv("TEMPREATURE")
-		TopP := os.Getenv("TOP_P")
-		FrequencyPenalty := os.Getenv("FREQ")
-		PresencePenalty := os.Getenv("PRES")
-		BotDesc := os.Getenv("BOT_DESC")
-		Proxy := os.Getenv("PROXY")
-		AuthUser := os.Getenv("AUTH_USER")
-		AuthPassword := os.Getenv("AUTH_PASSWORD")
-		if ApiKey != "" {
-			config.ApiKey = ApiKey
+
+		// 读取环境变量
+		envs := []struct {
+			key    string
+			target interface{}
+		}{
+			{"APIKEY", &config.ApiKey},
+			{"APIURL", &config.ApiURL},
+			{"MODEL", &config.Model},
+			{"MAX_TOKENS", &config.MaxTokens},
+			{"TEMPERATURE", &config.Temperature},
+			{"TOP_P", &config.TopP},
+			{"FREQ", &config.FrequencyPenalty},
+			{"PRES", &config.PresencePenalty},
+			{"BOT_DESC", &config.BotDesc},
+			{"PROXY", &config.Proxy},
+			{"AUTH_USER", &config.AuthUser},
+			{"AUTH_PASSWORD", &config.AuthPassword},
 		}
-		if ApiURL != "" {
-			config.ApiURL = ApiURL
-		}
-		if Proxy != "" {
-			config.Proxy = Proxy
+		for _, e := range envs {
+			val := os.Getenv(e.key)
+			if len(val) > 0 {
+				switch e.target.(type) {
+				case *string:
+					*(e.target.(*string)) = val
+				case *int:
+					if num, err := strconv.Atoi(val); err == nil {
+						*(e.target.(*int)) = num
+					}
+				case *float32:
+					if num, err := strconv.ParseFloat(val, 32); err == nil {
+						*(e.target.(*float32)) = float32(num)
+					}
+				case *float64:
+					if num, err := strconv.ParseFloat(val, 64); err == nil {
+						*(e.target.(*float64)) = num
+					}
+				}
+			}
 		}
 
-		if Model != "" {
-			config.Model = Model
-		}
-
-		if BotDesc != "" {
-			config.BotDesc = BotDesc
-		}
-
-		if MaxTokens != "" {
-			max, err := strconv.Atoi(MaxTokens)
-			if err != nil {
-				logger.Danger(fmt.Sprintf("config MaxTokens err: %v ,get is %v", err, MaxTokens))
-				return
-			}
-			config.MaxTokens = max
-		}
-		if Temperature != "" {
-			temp, err := strconv.ParseFloat(Temperature, 64)
-			if err != nil {
-				logger.Danger(fmt.Sprintf("config Temperature err: %v ,get is %v", err, Temperature))
-				return
-			}
-			config.Temperature = temp
-		}
-		if TopP != "" {
-			temp, err := strconv.ParseFloat(TopP, 32)
-			if err != nil {
-				logger.Danger(fmt.Sprintf("config Temperature err: %v ,get is %v", err, TopP))
-				return
-			}
-			config.TopP = float32(temp)
-		}
-		if FrequencyPenalty != "" {
-			temp, err := strconv.ParseFloat(FrequencyPenalty, 32)
-			if err != nil {
-				logger.Danger(fmt.Sprintf("config Temperature err: %v ,get is %v", err, FrequencyPenalty))
-				return
-			}
-			config.FrequencyPenalty = float32(temp)
-		}
-		if PresencePenalty != "" {
-			temp, err := strconv.ParseFloat(PresencePenalty, 32)
-			if err != nil {
-				logger.Danger(fmt.Sprintf("config Temperature err: %v ,get is %v", err, PresencePenalty))
-				return
-			}
-			config.PresencePenalty = float32(temp)
-		}
-		if AuthUser != "" {
-			config.AuthUser = AuthUser
-		}
-
-		if AuthPassword != "" {
-			config.AuthPassword = AuthPassword
+		// 校验配置是否正确
+		if config.ApiKey == "" {
+			logger.Danger("config err: api key required")
 		}
 	})
-	if config.ApiKey == "" {
-		logger.Danger("config err: api key required")
-	}
 
 	return config
 }
+
+// // LoadConfig 加载配置
+// func LoadConfig() *Configuration {
+// 	once.Do(func() {
+// 		// 给配置赋默认值
+// 		config = &Configuration{
+// 			MaxTokens:        60,
+// 			ApiURL:           "",
+// 			Port:             8080,
+// 			Listen:           "",
+// 			Model:            "gpt-3.5-turbo-0301",
+// 			Temperature:      0.9,
+// 			TopP:             1,
+// 			FrequencyPenalty: 0.0,
+// 			PresencePenalty:  0.6,
+// 		}
+
+// 		// 判断配置文件是否存在，存在直接JSON读取
+// 		_, err := os.Stat(CLI.Config)
+// 		if err == nil {
+// 			f, err := os.Open(CLI.Config)
+// 			if err != nil {
+// 				log.Fatalf("open config err: %v", err)
+// 				return
+// 			}
+// 			defer f.Close()
+// 			encoder := json.NewDecoder(f)
+// 			err = encoder.Decode(config)
+// 			if err != nil {
+// 				log.Fatalf("decode config err: %v", err)
+// 				return
+// 			}
+// 		}
+// 		// 有环境变量使用环境变量
+// 		ApiKey := os.Getenv("APIKEY")
+// 		ApiURL := os.Getenv("APIURL")
+// 		Model := os.Getenv("MODEL")
+// 		MaxTokens := os.Getenv("MAX_TOKENS")
+// 		Temperature := os.Getenv("TEMPREATURE")
+// 		TopP := os.Getenv("TOP_P")
+// 		FrequencyPenalty := os.Getenv("FREQ")
+// 		PresencePenalty := os.Getenv("PRES")
+// 		BotDesc := os.Getenv("BOT_DESC")
+// 		Proxy := os.Getenv("PROXY")
+// 		AuthUser := os.Getenv("AUTH_USER")
+// 		AuthPassword := os.Getenv("AUTH_PASSWORD")
+// 		if ApiKey != "" {
+// 			config.ApiKey = ApiKey
+// 		}
+// 		if ApiURL != "" {
+// 			config.ApiURL = ApiURL
+// 		}
+// 		if Proxy != "" {
+// 			config.Proxy = Proxy
+// 		}
+
+// 		if Model != "" {
+// 			config.Model = Model
+// 		}
+
+// 		if BotDesc != "" {
+// 			config.BotDesc = BotDesc
+// 		}
+
+// 		if MaxTokens != "" {
+// 			max, err := strconv.Atoi(MaxTokens)
+// 			if err != nil {
+// 				logger.Danger(fmt.Sprintf("config MaxTokens err: %v ,get is %v", err, MaxTokens))
+// 				return
+// 			}
+// 			config.MaxTokens = max
+// 		}
+// 		if Temperature != "" {
+// 			temp, err := strconv.ParseFloat(Temperature, 64)
+// 			if err != nil {
+// 				logger.Danger(fmt.Sprintf("config Temperature err: %v ,get is %v", err, Temperature))
+// 				return
+// 			}
+// 			config.Temperature = temp
+// 		}
+// 		if TopP != "" {
+// 			temp, err := strconv.ParseFloat(TopP, 32)
+// 			if err != nil {
+// 				logger.Danger(fmt.Sprintf("config Temperature err: %v ,get is %v", err, TopP))
+// 				return
+// 			}
+// 			config.TopP = float32(temp)
+// 		}
+// 		if FrequencyPenalty != "" {
+// 			temp, err := strconv.ParseFloat(FrequencyPenalty, 32)
+// 			if err != nil {
+// 				logger.Danger(fmt.Sprintf("config Temperature err: %v ,get is %v", err, FrequencyPenalty))
+// 				return
+// 			}
+// 			config.FrequencyPenalty = float32(temp)
+// 		}
+// 		if PresencePenalty != "" {
+// 			temp, err := strconv.ParseFloat(PresencePenalty, 32)
+// 			if err != nil {
+// 				logger.Danger(fmt.Sprintf("config Temperature err: %v ,get is %v", err, PresencePenalty))
+// 				return
+// 			}
+// 			config.PresencePenalty = float32(temp)
+// 		}
+// 		if AuthUser != "" {
+// 			config.AuthUser = AuthUser
+// 		}
+
+// 		if AuthPassword != "" {
+// 			config.AuthPassword = AuthPassword
+// 		}
+// 	})
+// 	if config.ApiKey == "" {
+// 		logger.Danger("config err: api key required")
+// 	}
+
+// 	return config
+// }
